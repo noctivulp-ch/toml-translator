@@ -734,6 +734,23 @@ def make_user_prompt(entries, ref_langs=(), source_label="EN", glossary_terms=()
     return "\n\n".join(x for x in parts if x)
 
 
+def strip_lang_tag(line, labels):
+    """
+    Quita la etiqueta de idioma que el modelo copia al principio de su respuesta.
+
+    Con --refs cada entrada se envía como "1. [JA] texto", y varios modelos
+    devuelven "[JA] OPCIÓN...". Detectado traduciendo un juego real.
+
+    Solo se recortan las etiquetas que ESTA llamada envió: un patrón genérico de
+    dos letras entre corchetes se comería marcadores legítimos como [BR].
+    """
+    for lab in labels:
+        pref = f"[{lab}]"
+        if line.lstrip().upper().startswith(pref.upper()):
+            return line.lstrip()[len(pref):].lstrip()
+    return line
+
+
 def parse_numbered_response(raw, count):
     ORDINAL = re.compile(r'^\s*\{?\d+\}?[\.\)\-\s]\s*(.*)')
     lines = []
@@ -925,6 +942,9 @@ def translate_batch(batch, api, model, cfg, ref_langs=(), glossary=(),
                 if attempt < max_retries:
                     continue
                 return [None] * len(texts)
+            if ref_langs:
+                labels = {cfg["source_label"]} | {l.upper() for l in ref_langs}
+                lines = [strip_lang_tag(l, labels) for l in lines]
             return lines
 
         except Exception as e:
