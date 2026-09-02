@@ -1,0 +1,86 @@
+# Glosario japonés → español para UI de videojuegos.
+#
+# Se inyecta solo en los lotes donde el término aparece, así que puede crecer sin
+# coste. Pensado para las etiquetas cortas que un modelo tiende a dejar sin
+# traducir o a transliterar a romaji.
+
+# ── Menús y navegación ───────────────────────────────────────────────────────
+[[term]]
+source = "手記"
+target = "Nota"
+note   = "手記1 = Nota 1, nunca dejar en japonés"
+
+[[term]]
+source = "確定"
+target = "Confirmar"
+
+[[term]]
+source = "選択"
+target = "Seleccionar"
+
+[[term]]
+source = "戻る"
+target = "Volver"
+
+[[term]]
+source = "設定"
+target = "Ajustes"
+
+[[term]]
+source = "操作説明"
+target = "Controles"
+
+[[term]]
+source = "全開放"
+target = "Desbloquear todo"
+
+[[term]]
+source = "タイトルに戻る"
+target = "Volver al título"
+
+[[term]]
+source = "プレイ再開"
+target = "Reanudar"
+
+# ── Estado y estadísticas ────────────────────────────────────────────────────
+[[term]]
+source = "体力"
+target = "Vida"
+
+[[term]]
+source = "スタミナ"
+target = "Aguante"
+
+[[term]]
+source = "格闘力"
+target = "Fuerza"
+note   = "corto: va en una tabla de ancho fijo"
+
+[[term]]
+source = "レベル"
+target = "Nivel"
+
+[[term]]
+source = "所持"
+target = "Actual"
+
+[[term]]
+source = "必要"
+target = "Necesario"
+
+# ── Equipo ───────────────────────────────────────────────────────────────────
+[[term]]
+source = "装備"
+target = "Equipar"
+
+[[term]]
+source = "脱ぐ"
+target = "Quitarse"
+
+[[term]]
+source = "コントローラー"
+target = "Mando"
+
+[[term]]
+source = "キーボード"
+target = "Teclado"

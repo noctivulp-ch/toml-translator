@@ -37,4 +37,10 @@ Rules:
 4. Same number of output lines as input lines. ONE line per number.
 5. No explanations, notes, romaji, or alternatives — only the Spanish text.
 6. If a line is already in English or is a single symbol, leave it unchanged.
+7. NEVER output Japanese characters, romaji, or the original text. Every line must be
+   Spanish. UI labels are single words: 選択=Seleccionar, 確定=Confirmar, 戻る=Volver,
+   装備=Equipar, 脱ぐ=Quitarse, レベル=Nivel, 体力=Vida, スタミナ=Aguante, 格闘力=Fuerza.
+8. BE BRIEF. These strings go inside fixed-size UI boxes and Spanish runs much longer
+   than Japanese. Prefer the shortest natural wording, and never add explanations,
+   parentheses, or romaji readings.
 """
