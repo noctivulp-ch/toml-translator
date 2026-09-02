@@ -75,6 +75,9 @@ def main():
                     help="Idioma de origen (default: mainLanguage del juego)")
     ap.add_argument("--out", default=None,
                     help="Directorio de salida (default: <juego>/translation)")
+    ap.add_argument("--refs", default="auto",
+                    help="Otros idiomas del juego a emitir como original_<lang> para "
+                         "traducción cruzada: 'auto' (todos), 'none', o lista 'en_US'")
     args = ap.parse_args()
 
     if not args.game_dir and not args.json:
@@ -97,20 +100,38 @@ def main():
     src = args.locale or main_lang or "ja_JP"
     print(f"  Idiomas del juego: {langs or '(ninguno declarado)'} | origen: {src}")
 
+    # Idiomas de referencia: el mismo texto ya traducido a otro idioma sirve para
+    # desambiguar (ver docs/decisiones/0005). El japonés omite sujeto y número con
+    # mucha frecuencia, así que una versión inglesa del mismo texto ayuda de verdad.
+    if args.refs == "none":
+        refs = []
+    elif args.refs == "auto":
+        refs = [l for l in langs if l != src]
+    else:
+        refs = [l.strip() for l in args.refs.split(",") if l.strip() and l.strip() != src]
+
     entries = []
     skipped = 0
+    ref_counts = {r: 0 for r in refs}
     for node, path in pgmmv.iter_texts(project):
         text = node["text"].get(src)
         if not text or not text.strip():
             skipped += 1
             continue
         clean, codes = preprocess(text)
-        entries.append({
+        e = {
             "id": f"text:{node['id']}",
             "original": clean,
             "codes": codes,
             "context": " / ".join(path + [node.get("name", "")]).strip(" /"),
-        })
+            "refs": {},
+        }
+        for lang in refs:
+            other = node["text"].get(lang)
+            if other and other.strip() and other.strip() != text.strip():
+                e["refs"][lang], _ = preprocess(other)
+                ref_counts[lang] += 1
+        entries.append(e)
 
     if not entries:
         print(f"ERROR: ningún texto en el idioma '{src}'. Prueba --locale con uno de {langs}")
@@ -142,6 +163,8 @@ def main():
         lines.append(f'id = "{toml_escape(e["id"])}"')
         lines.append(f'original = "{toml_escape(e["original"])}"')
         lines.append(f'translated = "{existing.get(e["id"], "")}"')
+        for lang, val in e["refs"].items():
+            lines.append(f'original_{lang} = "{toml_escape(val)}"')
         if e["codes"]:
             lines.append(f'codes = "{toml_escape(e["codes"])}"')
         if e["context"]:
@@ -155,6 +178,9 @@ def main():
     print(f"  Textos      : {len(entries)}  ({chars:,} caracteres)")
     print(f"  Vacíos      : {skipped} omitidos")
     print(f"  Reutilizados: {len(existing)} ya traducidos")
+    for lang, n in ref_counts.items():
+        print(f"  Referencia   : {lang} en {n} entradas"
+              + ("" if n else "  (el juego declara el idioma pero no lo rellenó)"))
     print(f"  Salida      : {out_path}")
 
 

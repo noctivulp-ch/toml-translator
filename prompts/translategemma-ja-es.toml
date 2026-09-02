@@ -1,0 +1,24 @@
+# Japonés → español con los modelos TranslateGemma, en su formato nativo.
+#
+# OJO: translategemma reescribe el contenido explícito (75% de suavizado medido,
+# ver docs/benchmarks.md). Úsalo solo para texto neutro — de eso se encarga
+# routing/nito-ja-es.toml, que manda lo adulto a un modelo fiel.
+
+[meta]
+name            = "translategemma-ja-es"
+style           = "translategemma"
+language        = "español"
+source_name     = "Japanese"
+source_code     = "ja"
+target_name     = "Spanish"
+target_code     = "es"
+source_language = "JA"
+deepl_target    = "ES"
+
+[system]
+text = """
+Use Latin American Spanish: 'tú' and 'ustedes', never 'vosotros'.
+Keep every [BRACKET] marker exactly as written; they are formatting codes, not text.
+Do not translate proper nouns or character names.
+The input is a numbered list. Return the same numbering, one line per number, nothing else.
+"""

@@ -1,0 +1,63 @@
+# Enrutado para NITO (Pixel Game Maker MV, japonés → español latino).
+#
+# Reparto: lo adulto y lo violento van a un modelo fiel; el resto a
+# translategemma, que traduce mejor y más rápido pero reescribe el contenido
+# explícito (75% de suavizado medido — ver docs/benchmarks.md, resultado 4).
+#
+# Uso:
+#   python toml-translator.py --api ollama \
+#     --prompt prompts/japones-es.toml \
+#     --routing routing/nito-ja-es.toml \
+#     --num-ctx 8192 \
+#     "/ruta/al/juego/translation/texts.toml"
+
+# ── 1. Por carpeta del editor ────────────────────────────────────────────────
+# El extractor guarda en `context` la ruta de carpetas del proyecto. El autor
+# agrupó las escenas adultas en carpetas llamadas アダルト ("adult"), así que la
+# propia organización del juego marca el contenido mejor que cualquier regex
+# sobre el texto: un gemido suelto no tiene palabras delatoras, pero su carpeta sí.
+[[route]]
+name          = "adulto-carpeta"
+model         = "Librellama/gemma4:e2b-Uncensored"
+prompt        = "../prompts/japones-es.toml"
+batch         = 20
+match_context = "アダルト|エッチ|ero|adult|H_|Hシーン"
+
+# ── 2. Por vocabulario explícito japonés ─────────────────────────────────────
+# Incluye los símbolos ♥♡ porque en este género marcan casi siempre línea de sexo.
+[[route]]
+name   = "explicito"
+model  = "Librellama/gemma4:e2b-Uncensored"
+prompt = "../prompts/japones-es.toml"
+batch  = 20
+match  = "犯|挿入|射精|精液|ちんぽ|肉棒|まんこ|おっぱい|セックス|エッチ|イく|イっ|いぐ|喘|あぁ|んっ|ぁあ|♥|♡|裸|全裸|乳|尻|舐|嬲|arousal"
+
+# ── 3. Violencia y muerte ────────────────────────────────────────────────────
+[[route]]
+name   = "violento"
+model  = "Librellama/gemma4:e2b-Uncensored"
+prompt = "../prompts/japones-es.toml"
+batch  = 20
+match  = "殺|死|血|殴|斬|刺|傷|痛|苦し|絶望|拷問|喰|捕食|DIE|DEAD"
+
+# ── 4. Resto (UI, menús, avisos) ─────────────────────────────────────────────
+[[route]]
+name   = "general"
+model  = "translategemma:4b"
+prompt = "../prompts/translategemma-ja-es.toml"
+batch  = 25
+
+# ── Red de seguridad ─────────────────────────────────────────────────────────
+# Las regex de arriba solo ven el vocabulario listado. El clasificador revisa lo
+# que cae en "general" y rescata lo que se le escapó (recall medido: 15% -> 93%).
+# Modelo censurado a propósito: detecta mejor de lo que traduce.
+[classifier]
+model   = "gemma4:e2b"
+route   = "adulto-carpeta"
+checks  = ["general"]
+batch   = 30
+context = """
+The game is an adult Japanese action game: sexual and violent content is FREQUENT
+and often written as moans, symbols (♥), or implication rather than explicit words.
+A line that only hints at sex or violence still counts as EXPLICIT or VIOLENT.
+"""

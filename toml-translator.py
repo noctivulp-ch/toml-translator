@@ -220,6 +220,11 @@ def load_routing(path, prompt_dir=None):
             "batch":       r.get("batch"),
             "num_ctx":     r.get("num_ctx"),
             "match":       re.compile(r["match"], re.IGNORECASE) if r.get("match") else None,
+            # Los extractores guardan en `context` la ruta del editor (carpeta,
+            # nombre de evento). Suele ser una señal más fiable que el propio
+            # texto: una carpeta "アダルトセリフ" delata la escena entera.
+            "match_context": re.compile(r["match_context"], re.IGNORECASE)
+                             if r.get("match_context") else None,
             "min_chars":   r.get("min_chars"),
             "max_chars":   r.get("max_chars"),
             "min_markers": r.get("min_markers"),
@@ -384,6 +389,8 @@ def apply_classifier(groups, classifier, routes, num_gpu, num_ctx):
 def route_matches(route, entry):
     text = entry["original"]
     if route["match"] and not route["match"].search(text):
+        return False
+    if route["match_context"] and not route["match_context"].search(entry.get("context", "")):
         return False
     if route["min_chars"] is not None and len(text) < route["min_chars"]:
         return False
@@ -1080,7 +1087,8 @@ def main():
         print(f"  Enrutado: {len(routes)} rutas desde {Path(args.routing).name}")
         for r in routes:
             cond = []
-            if r["match"]:       cond.append("match")
+            if r["match"]:         cond.append("match")
+            if r["match_context"]: cond.append("context")
             if r["min_chars"]:   cond.append(f"≥{r['min_chars']}c")
             if r["max_chars"]:   cond.append(f"≤{r['max_chars']}c")
             if r["min_markers"]: cond.append(f"≥{r['min_markers']} markers")
@@ -1093,7 +1101,8 @@ def main():
     # Con un enrutado que cubre todo (una ruta sin condiciones y con modelo), nunca
     # se usa el modelo por defecto: pedirlo por menú sería pedir algo que no se usa.
     routing_covers_all = bool(routes) and any(
-        r["model"] and not (r["match"] or r["min_chars"] or r["max_chars"] or r["min_markers"])
+        r["model"] and not (r["match"] or r["match_context"] or r["min_chars"]
+                            or r["max_chars"] or r["min_markers"])
         for r in routes
     )
 
