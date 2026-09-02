@@ -1,0 +1,128 @@
+# Glosario Pokémon — español latino
+#
+# Se inyecta en el prompt SOLO para los términos que aparecen en cada lote
+# (relevant_terms, toml-translator.py). Por eso puede crecer sin coste:
+# un glosario de 500 términos sigue enviando ~5 por llamada.
+#
+# Uso:
+#   python toml-translator.py --api ollama --prompt prompts/pokemon-es.toml \
+#     --glossary glossaries/pokemon-es.toml translation/*.toml
+
+# ── Combate ──────────────────────────────────────────────────────────────────
+[[term]]
+source = "fainted"
+target = "se debilitó"
+note   = "nunca 'se desmayó' ni 'se desmayo'"
+
+[[term]]
+source = "super effective"
+target = "es muy efectivo"
+note   = "nunca 'súper efectivo'"
+
+[[term]]
+source = "not very effective"
+target = "no es muy efectivo"
+
+[[term]]
+source = "critical hit"
+target = "golpe crítico"
+
+[[term]]
+source = "But it failed"
+target = "¡Pero falló!"
+
+[[term]]
+source = "paralyzed"
+target = "paralizado"
+
+[[term]]
+source = "poisoned"
+target = "envenenado"
+
+[[term]]
+source = "burned"
+target = "quemado"
+
+[[term]]
+source = "frozen"
+target = "congelado"
+
+[[term]]
+source = "fell asleep"
+target = "se durmió"
+
+[[term]]
+source = "confused"
+target = "confundido"
+
+[[term]]
+source = "flinched"
+target = "se amedrentó"
+
+# ── Estado y salud ───────────────────────────────────────────────────────────
+[[term]]
+source = "full health"
+target = "plena salud"
+
+[[term]]
+source = "HP"
+target = "PS"
+note   = "puntos de salud"
+
+[[term]]
+source = "PP"
+target = "PP"
+note   = "no traducir"
+
+# ── Objetos y lugares ────────────────────────────────────────────────────────
+[[term]]
+source = "Potion"
+target = "Poción"
+
+[[term]]
+source = "Super Potion"
+target = "Superpoción"
+
+[[term]]
+source = "Poké Ball"
+target = "Poké Ball"
+note   = "no traducir"
+
+[[term]]
+source = "BAG"
+target = "MOCHILA"
+
+[[term]]
+source = "PC"
+target = "PC"
+note   = "no traducir"
+
+[[term]]
+source = "POKéMON CENTER"
+target = "CENTRO POKéMON"
+
+[[term]]
+source = "GYM LEADER"
+target = "LÍDER DE GIMNASIO"
+
+[[term]]
+source = "ELITE FOUR"
+target = "ALTO MANDO"
+
+[[term]]
+source = "HALL OF FAME"
+target = "SALÓN DE LA FAMA"
+
+# ── Acciones ─────────────────────────────────────────────────────────────────
+[[term]]
+source = "evolving"
+target = "está evolucionando"
+
+[[term]]
+source = "learned"
+target = "aprendió"
+
+[[term]]
+source = "wild"
+target = "salvaje"
+note   = "'A wild X appeared' → 'un X salvaje apareció'"

@@ -1,0 +1,35 @@
+# Prompt para los modelos TranslateGemma (translategemma:4b / :12b / :27b).
+#
+# Estos modelos NO usan system prompt: su plantilla de chat fusiona system y user
+# en el mismo turno. Esperan la instrucción canónica de la tarjeta del modelo
+# seguida de DOS líneas en blanco y luego el texto.
+#
+# style="translategemma" hace que el script construya ese formato exacto y meta
+# las reglas de [system] text como líneas extra de la instrucción.
+#
+# Uso:
+#   python toml-translator.py --api ollama --model translategemma:4b \
+#     --prompt prompts/translategemma-es.toml --num-ctx 8192 translation/*.toml
+
+[meta]
+name            = "translategemma-es"
+style           = "translategemma"
+language        = "español"
+source_name     = "English"
+source_code     = "en"
+target_name     = "Spanish"
+target_code     = "es"
+source_language = "EN"          # etiqueta de `original` cuando se usan --refs
+deepl_target    = "ES"
+
+[system]
+# Se añade DESPUÉS de la frase canónica y ANTES de las dos líneas en blanco.
+# Deliberadamente corto: cuanto más se aleja del formato con el que se entrenó
+# el modelo, menos fiable es. Las preferencias de estilo largas van mejor en
+# prompts/pokemon-es.toml con style="chat".
+text = """
+Use Latin American Spanish: 'tú' and 'ustedes', never 'vosotros'.
+Keep every [BRACKET] placeholder exactly as written; they are variable names, not text.
+Do not translate proper nouns, character names, or item names.
+The input is a numbered list. Return the same numbering, one line per number, and nothing else.
+"""

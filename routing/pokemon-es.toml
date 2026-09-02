@@ -1,0 +1,90 @@
+# Enrutado por contenido — fangame Pokémon al español latino.
+#
+# Motivación medida (docs/benchmarks.md, 2026-09-02):
+#
+#   translategemma:4b  es el más rápido (4 s/lote frente a 11-25 s) y el que menos
+#                      contexto gasta (294 tokens de prompt frente a 688), PERO
+#                      reescribe el contenido explícito: "fucked her" → "la besaba",
+#                      "rode him" → "él la besó". 75% de líneas suavizadas.
+#                      No rechaza ni deja nada sin traducir: pasa todas las métricas
+#                      automáticas mientras destroza el texto.
+#
+#   gemma e2b-Uncensored  fiel al contenido explícito (0% suavizado) y rápido.
+#
+# De ahí la regla: el contenido adulto va al modelo fiel, el resto al rápido.
+#
+# Uso:
+#   python toml-translator.py --api ollama \
+#     --prompt prompts/pokemon-es.toml \
+#     --glossary glossaries/pokemon-es.toml \
+#     --routing routing/pokemon-es.toml \
+#     --num-ctx 8192 \
+#     translation/*.toml
+#
+# Con --routing, el --prompt y --model de la línea de comandos solo se usan para
+# las entradas que no casen con ninguna ruta.
+
+# ── 1. Contenido explícito → modelo fiel ─────────────────────────────────────
+# Basta que la línea contenga uno de estos términos. Ante la duda, que caiga aquí:
+# el coste es tiempo; el coste de equivocarse en el otro sentido es texto censurado
+# que solo se detecta leyéndolo.
+[[route]]
+name   = "explicito"
+model  = "Librellama/gemma4:e2b-Uncensored"
+prompt = "../prompts/pokemon-es.toml"
+batch  = 20
+match  = "\\b(fuck\\w*|cock|dick|cum|cumming|came|pussy|tits|nipples?|thrust\\w*|moan\\w*|horny|aroused|naked|nude|orgasm|climax|panties|thighs?|grind\\w*|stroke[ds]?|lick\\w*|suck\\w*|riding|rode|penetrat\\w*|breasts?|ass|butt|slut|whore|erection|hard-?on|wet|dripping)\\b"
+
+# ── 2. Temas oscuros / violencia → también al fiel ───────────────────────────
+# No se midió suavización aquí, pero es el mismo riesgo: un modelo que sanitiza
+# sexo también tiende a suavizar violencia, y no hay métrica automática que lo pille.
+[[route]]
+name   = "violento"
+model  = "Librellama/gemma4:e2b-Uncensored"
+prompt = "../prompts/pokemon-es.toml"
+batch  = 20
+match  = "\\b(kill\\w*|murder\\w*|blood|bleed\\w*|corpse|body|die[ds]?|dead|death|suicide|torture\\w*|rape[ds]?|abuse[ds]?|stab\\w*|shot|shoot\\w*|bullet|burn\\w*alive|drown\\w*)\\b"
+
+# ── 3. Todo lo demás → el rápido ─────────────────────────────────────────────
+# Sin condiciones: actúa de fallback. Diálogo neutro, UI, descripciones PBS.
+# Aquí translategemma rinde mejor y consume menos contexto.
+[[route]]
+name   = "general"
+model  = "translategemma:4b"
+prompt = "../prompts/translategemma-es.toml"
+batch  = 30
+
+# ── Clasificador — red de seguridad detrás de las regex ──────────────────────
+#
+# Las regex de arriba solo detectan el vocabulario que alguien listó. Un término
+# no previsto cae en "general" y sale reescrito sin dejar rastro (ISSUE-010).
+#
+# Esta etapa revisa lo que las regex NO marcaron y reenruta lo que resulte
+# sensible. Es segura por asimetría: un falso negativo deja las cosas como
+# estaban —la regex ya había fallado ahí— y un falso positivo solo cuesta tiempo.
+#
+# El modelo aquí es el CENSURADO, al contrario que en las rutas de traducción.
+# Medido (docs/benchmarks.md, resultado 6): gemma4:e2b detecta 75-90% de los
+# eufemismos frente al 60-70% del Uncensored, y la regex sola solo un 15%.
+#
+# No es una contradicción: son tareas distintas. Un modelo con filtros fuertes ha
+# aprendido a RECONOCER contenido sensible, que es justo lo que se le pide aquí.
+# Que sea peor traduciéndolo —suaviza— da igual: aquí no traduce, solo etiqueta.
+# El riesgo de que se negara a etiquetar no apareció: 0 líneas sin etiqueta en
+# cuatro corridas.
+#
+# Desactivar con --no-classify (más rápido, pero solo quedan las regex).
+# `context` describe el juego al clasificador. Medido: sube el recall del 82% al 93%
+# (baja la precisión del 87% al 75%, que es el intercambio deseable — un falso
+# positivo solo cuesta tiempo). Sin él, el modelo juzga cada línea aislada y
+# "the bed creaked all night long" le parece inocua.
+[classifier]
+model   = "gemma4:e2b"
+context = """
+The game is an adult fan game: sexual and violent content is FREQUENT and usually
+written as euphemism or implication rather than explicit words. A line that only
+hints at sex or violence still counts as EXPLICIT or VIOLENT.
+"""
+route  = "explicito"
+checks = ["general"]
+batch  = 40
