@@ -462,3 +462,101 @@ lote salga bien, fallará en otros.
 
 `bench_batch.py` acepta ahora `--corpus` (un TOML de extracción real) y `--refs`, para
 medir con las condiciones exactas del proyecto en vez de con un corpus sintético.
+
+## Resultado 10 — Contra una traducción humana: texto deliberadamente difícil
+
+El proyecto de *Pokémon Reborn* dejó 341 diálogos de TERRA traducidos y validados a
+mano: leetspeak, gritos en mayúsculas, vocales alargadas, memes de 2010, tacos
+constantes y juegos de palabras. Es una referencia humana contra la que medir.
+
+Muestra: las 24 líneas más difíciles, más 14 deformadas en leetspeak con
+`leetificar.py` para simular lo que el modelo vería sin preprocesar. Modelo:
+`gemma4:e2b-Uncensored` con el prompt `terra-es.toml` del propio proyecto.
+Evaluación: `scripts/eval_vs_human.py`.
+
+### Qué conserva bien
+
+| Métrica | Texto limpio | Texto corrupto |
+|---|---|---|
+| Mayúsculas (grita si el original grita) | 92% | 100% |
+| Vocales alargadas | 87% | 75% |
+| Emoticonos | 100% | — |
+
+El estilo visual se preserva casi entero. Eso es lo que el prompt pide de forma
+mecánica, y el modelo lo cumple.
+
+### Qué no
+
+| Métrica | Limpio | Corrupto |
+|---|---|---|
+| Tacos sin censurar | 33% | 33% |
+| Nombres propios intactos | 62% | **0%** |
+| Registro castellano | **0%** | 33% |
+
+`Ciel` (un personaje) se convierte en "el cielo" en cuanto el texto va deformado. Y
+pese a que el prompt pide castellano con jerga de España, el modelo entrega español
+neutro.
+
+### El texto corrupto rompe la comprensión, no el estilo
+
+Comparando la misma línea limpia y deformada:
+
+| Original | Limpio | Corrupto |
+|---|---|---|
+| `SAVING PEOPLE` | "SALVAR A LA GENTE" ✓ | "AHORRAR A LA GENTE" ✗ |
+| `Ciel is totes eZ` | "Ciel es súper fácil" ✓ | "El cielo es fácil" ✗ |
+| `Troo TO LEAGUE TOURNAMENT STANDRAWRDS` | "A LAS REGLAS DE LA LIGA" ≈ | "A LA TAREA DE LA LEY" ✗ |
+
+El leetspeak no degrada el estilo —las mayúsculas siguen ahí— sino el **sentido**. Es
+la peor forma de fallar: parece bien formado y dice otra cosa.
+
+**Conclusión de diseño:** el texto deformado hay que separarlo antes de traducir, no
+pedirle al modelo que lo entienda. Reborn ya lo resolvía así: el juego guarda las dos
+versiones (`T3RR4: w8.\tts[TERRA: wait.]`), se traduce solo la legible y `leetificar.py`
+regenera la deformación de forma determinista. Es el mismo principio del ADR 0003 —
+sacar lo que el modelo estropearía, traducir limpio, reinyectar después.
+
+### Intento de arreglarlo con el prompt
+
+Se reforzó el prompt (prohibición explícita del neutro, equivalencias de tacos, lista
+de nombres propios) y se añadió `glossaries/terra-en-es.toml` con jerga y nombres:
+
+| Métrica | v1 | v2 |
+|---|---|---|
+| Tacos | 33% | **67%** |
+| Longitud vs humano | ×0.89 | ×0.94 |
+| Mayúsculas / vocales / emoji | 92 / 87 / 100% | igual |
+| Nombres | 62% | igual |
+| **Registro castellano** | **0%** | **0%** |
+
+**Mejora real donde el modelo no entendía la frase:**
+`CUZ IMMA KIK ur ASS` pasó de "¡PORQUE TE MENTIDO!" (sin sentido) a "TE VOY A PATEAR
+EL CULO".
+
+**Regresiones que la métrica no capta:**
+
+| Original | v1 | v2 |
+|---|---|---|
+| `super leet hackingu` | "hackeo súper avanzadas" | "hackeo **super leet** súper avanzadas" |
+| `totes eZ` | "súper fácil" | "total fácil" |
+| `if yanno wut i mean` | "si **sabéis** a lo que me refiero" | "si ya sabes lo que quierro" |
+
+El glosario inyecta equivalencias literales y el modelo las pega tal cual, aunque
+queden torpes. En el último caso v1 usaba `sabéis` —el castellano que el prompt
+pedía— y v2 lo perdió.
+
+### Lo que esto enseña sobre los prompts
+
+Hay dos clases de fallo y solo una se arregla escribiendo más instrucciones:
+
+- **Fallo de conocimiento** (no sabe qué significa `imma kik ur ass`): un par
+  origen→destino concreto lo arregla. El glosario duplicó el acierto en tacos.
+- **Fallo de capacidad** (no sabe escribir en castellano coloquial): las instrucciones
+  no lo mueven. Se pasó de una petición general a una prohibición explícita con lista
+  de palabras obligatorias, y el registro siguió en **0%**.
+
+Insistir en el prompt ante un fallo de capacidad es tiempo perdido; hace falta otro
+modelo, o aceptar el resultado y corregir a mano. Con 3 casos de registro en la
+muestra el dato es débil, pero apunta en esa dirección y coincide con lo observado en
+el resto de los benchmarks: los modelos pequeños cumplen reglas mecánicas y fallan en
+las que exigen criterio.

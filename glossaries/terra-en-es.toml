@@ -1,0 +1,99 @@
+# Jerga y nombres para los diálogos de TERRA (Pokémon Reborn, castellano).
+#
+# Existe porque el system prompt pedía "no censures" y "usa jerga de España" y el
+# modelo cumplía a medias: 33% en tacos y 0% en registro. Una instrucción general
+# se diluye; un par origen→destino concreto no.
+
+# ── Nombres propios: NO se traducen ──────────────────────────────────────────
+[[term]]
+source = "Ciel"
+target = "Ciel"
+note   = "personaje — nunca 'cielo'"
+
+[[term]]
+source = "Terra"
+target = "TERRA"
+
+[[term]]
+source = "Anna"
+target = "Anna"
+
+[[term]]
+source = "Titania"
+target = "Titania"
+
+# ── Jerga y contracciones ────────────────────────────────────────────────────
+[[term]]
+source = "imma"
+target = "te voy a"
+note   = "'imma kik ur ass' = 'te voy a dar una paliza'"
+
+[[term]]
+source = "kik ur ass"
+target = "patear el culo"
+
+[[term]]
+source = "totes"
+target = "total"
+note   = "'totes eZ' = 'mega fácil'"
+
+[[term]]
+source = "yanno"
+target = "ya sabes"
+
+[[term]]
+source = "wut"
+target = "qué"
+
+[[term]]
+source = "troo"
+target = "según"
+note   = "'troo to X standards' = 'según las normas de X'"
+
+[[term]]
+source = "das"
+target = "así de"
+note   = "'das how salty' = 'así de salada'"
+
+[[term]]
+source = "mah"
+target = "mis"
+
+[[term]]
+source = "leet"
+target = "pro"
+
+[[term]]
+source = "cuz"
+target = "porque"
+
+[[term]]
+source = "i'nit"
+target = "¿o no?"
+
+# ── Tacos: traducción literal, sin suavizar ──────────────────────────────────
+[[term]]
+source = "bitch"
+target = "zorra"
+note   = "nunca suavizar a 'chica' o 'tipa'"
+
+[[term]]
+source = "ass"
+target = "culo"
+
+[[term]]
+source = "fuck"
+target = "joder"
+
+[[term]]
+source = "shit"
+target = "mierda"
+
+[[term]]
+source = "dick"
+target = "polla"
+note   = "castellano, no 'verga'"
+
+[[term]]
+source = "tits"
+target = "tetas"
