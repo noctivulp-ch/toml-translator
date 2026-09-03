@@ -76,3 +76,35 @@ del coste lo justifica:
 las llamadas y añade un segundo punto de fallo silencioso: un clasificador que se equivoca
 manda la línea al modelo que la va a censurar, con el mismo resultado invisible. Una regex
 es auditable de un vistazo y no cuesta una llamada.
+
+## Precedente: el reparto manual de Pokémon Reborn
+
+El enrutado no nació aquí. El proyecto de traducción de *Pokémon Reborn* (2026) ya
+resolvía el mismo problema a mano, con `categorizar.rb` repartiendo el texto pendiente en
+tres archivos según **quién** lo traducía:
+
+| Archivo | Entradas | Traductor | Criterio |
+|---|---:|---|---|
+| `01-manual.toml` | 439 | persona | leetspeak, jerga, memes, formato crítico, ≥3 marcadores |
+| `02-claude.toml` | 463 | modelo grande | UI, sistema, combate y lo traducido pero roto |
+| `03-ollama.toml` | 1616 | modelo local | diálogo narrativo sin formato crítico |
+
+Y ya usaba prompts especializados por contenido (`terra-es.toml` para el personaje que
+habla en leetspeak y memes, `reborn-es.toml` para el resto).
+
+La idea es la misma: **el texto no es homogéneo, y mandarlo todo al mismo sitio lo
+estropea**. Lo que cambia es la mecánica:
+
+| | Reborn (2026) | `--routing` |
+|---|---|---|
+| Reparto | Un script parte el TOML en tres | Una corrida, un solo TOML |
+| Criterio | Dificultad estimada a priori | Contenido de cada línea (regex + clasificador) |
+| Prompt | Uno por archivo, elegido a mano | Uno por ruta, atado al modelo (ADR 0007) |
+| Ajustar | Re-categorizar y rehacer los archivos | Editar una regex |
+
+El precedente también deja un aviso: allí el corte "difícil → modelo grande" se decidió
+por intuición, sin medir. Los benchmarks de este repo apuntan a que esa intuición no se
+sostiene con los modelos locales disponibles — `gemma4:e4b` rinde **peor** que `e2b` pese
+a ser mayor (resultado 1), y lo que separa a los modelos no es el tamaño sino qué tipo de
+contenido estropean (resultado 4). Un "modelo grande para lo complejo" es una hipótesis a
+medir, no un principio.
