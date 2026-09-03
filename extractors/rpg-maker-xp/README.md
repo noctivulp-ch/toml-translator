@@ -115,18 +115,19 @@ Para revertir: `for f in Data/*.bak PBS/*.bak; do mv "$f" "${f%.bak}"; done`
 
 ## Sobre `diff.rb`
 
-Genera un TOML con secciones `[[added]]`, `[[changed]]` y `[[removed]]` — **no**
-`[[entry]]`. `toml-translator.py` solo parsea `[[entry]]`, así que el diff no se le puede
-pasar directamente; hay que renombrar las cabeceras primero:
+Es una herramienta de **revisión**, no una etapa del pipeline. Responde a "¿qué hay que
+retocar de la traducción cuando sale una versión nueva del juego?" y se lee a mano.
 
-```bash
-sed -e 's/^\[\[added\]\]$/[[entry]]/' -e 's/^\[\[changed\]\]$/[[entry]]/' \
-    diff.toml > diff_entries.toml
-```
+Emite `[[added]]`, `[[changed]]` y `[[removed]]` en vez de `[[entry]]` precisamente
+porque separar los tres casos es lo que hace útil la revisión: un string nuevo se traduce,
+uno cambiado se contrasta con la traducción anterior, y uno eliminado avisa de que su
+traducción ya sobra. Fundirlos en `[[entry]]` perdería esa distinción.
 
-Los `[[removed]]` se emiten comentados — son informativos, marcan traducciones obsoletas.
+**Para traducir solo lo nuevo no hace falta el diff**: basta con re-ejecutar `extract.rb`
+sobre la versión nueva. `write_toml` solo añade los ids que no existan y respeta lo ya
+traducido, así que el TOML resultante ya trae únicamente lo pendiente.
 
-Ver `issues.md` en la raíz del repo (ISSUE-001).
+Los `[[removed]]` se emiten comentados — son informativos.
 
 ## Estado de cobertura
 

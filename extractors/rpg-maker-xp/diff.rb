@@ -1,12 +1,19 @@
 #!/usr/bin/env ruby
-# diff_strings.rb — compara dos versiones del juego para detectar cambios de texto
+# diff.rb — compara dos versiones del juego para ver qué texto cambió
 # Uso:
-#   ruby Tools/diff_strings.rb /ruta/v0.2.2 /ruta/v0.2.3 [--out diff.toml]
+#   ruby extractors/rpg-maker-xp/diff.rb /ruta/v0.2.2 /ruta/v0.2.3 [--out diff.toml]
 #
-# Genera un TOML de diff con secciones [[added]], [[changed]], [[removed]].
-# Las entradas [[added]] y [[changed]] tienen translated="" listas para traducir.
-# Pasa el resultado a auto_translate.py para traducir solo los strings nuevos:
-#   python Tools/auto_translate.py --api ollama translation/diff.toml
+# Es una herramienta de REVISIÓN, no una etapa del pipeline. Sirve para responder
+# "¿qué hay que retocar de la traducción al llegar una versión nueva?" y se lee a
+# mano: qué diálogos son nuevos, cuáles cambiaron y cuáles desaparecieron.
+#
+# Genera un TOML con secciones [[added]], [[changed]] y [[removed]] — cabeceras
+# distintas a [[entry]] justamente porque no es entrada del traductor: separar los
+# tres casos es lo que hace útil la revisión.
+#
+# Para traducir solo lo nuevo, el camino normal es re-ejecutar extract.rb sobre la
+# versión nueva: write_toml solo añade los ids que no existan y conserva lo ya
+# traducido, así que el TOML resultante ya trae únicamente lo pendiente.
 
 require 'zlib'
 require 'digest'
@@ -305,7 +312,7 @@ out_idx = ARGV.index("--out")
 out_path = out_idx ? ARGV[out_idx + 1] : File.join(dir_new || ".", "translation", "diff.toml")
 
 if dir_old.nil? || dir_new.nil?
-  puts "Uso: ruby Tools/diff_strings.rb /ruta/v_old /ruta/v_new [--out diff.toml]"
+  puts "Uso: ruby diff.rb /ruta/v_old /ruta/v_new [--out diff.toml]"
   exit 1
 end
 
