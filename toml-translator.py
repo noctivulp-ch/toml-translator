@@ -16,7 +16,7 @@ Flags:
   --batch    strings por llamada (default: 10 ollama / 50 cloud)
   --dry-run  muestra los primeros 5 strings sin escribir nada
   --num-gpu  capas del modelo en GPU (default: 99)
-  --num-ctx  ventana de contexto Ollama (default: 2048)
+  --num-ctx  ventana de contexto Ollama (default: 8192)
   --refs     idiomas de referencia: auto | none | "ja,fr"  (default: auto)
   --glossary TOML de glosario de términos; repetible
   --routing  TOML de enrutado por contenido (modelo distinto según la línea)
@@ -909,6 +909,46 @@ def translate_claude(body, system):
 # Motor principal
 # ─────────────────────────────────────────────────────────────────────────────
 
+class FatalBackendError(Exception):
+    """
+    Error que ningún reintento va a arreglar: falta de VRAM, modelo inexistente,
+    credenciales inválidas. Aborta la corrida en vez de repetir el ciclo por cada
+    lote del archivo.
+    """
+
+
+# Firmas de error no transitorio. Reintentar estas es tiempo perdido: con un modelo
+# que no cabe en VRAM, cada lote gastaba 3 intentos para terminar sin traducir nada
+# y con un errors.log que no mencionaba la causa real (ISSUE-009).
+FATAL_PATTERNS = [
+    ("out of memory",        "El modelo no cabe en la VRAM disponible"),
+    ("cudamalloc",           "El modelo no cabe en la VRAM disponible"),
+    ("unable to allocate",   "El modelo no cabe en la VRAM disponible"),
+    ("failed to allocate",   "El modelo no cabe en la VRAM disponible"),
+    ("model not found",      "El modelo no existe en Ollama"),
+    ("model requires more system memory", "El modelo no cabe en la RAM disponible"),
+    ("invalid api key",      "Credenciales inválidas"),
+    ("incorrect api key",    "Credenciales inválidas"),
+    ("authentication",       "Credenciales inválidas"),
+]
+
+
+def classify_error(exc):
+    """Devuelve una explicación si el error es irrecuperable, o None si conviene reintentar."""
+    text = str(exc).lower()
+    body = ""
+    if hasattr(exc, "read"):
+        try:
+            body = exc.read().decode("utf-8", "replace").lower()
+        except Exception:
+            body = ""
+    blob = text + " " + body
+    for needle, reason in FATAL_PATTERNS:
+        if needle in blob:
+            return reason, (body or text)[:300]
+    return None
+
+
 def translate_batch(batch, api, model, cfg, ref_langs=(), glossary=(),
                     num_gpu=99, num_ctx=2048, max_retries=2):
     """
@@ -947,7 +987,13 @@ def translate_batch(batch, api, model, cfg, ref_langs=(), glossary=(),
                 lines = [strip_lang_tag(l, labels) for l in lines]
             return lines
 
+        except FatalBackendError:
+            raise
         except Exception as e:
+            fatal = classify_error(e)
+            if fatal:
+                reason, detail = fatal
+                raise FatalBackendError(f"{reason}\n    {detail}") from e
             if attempt < max_retries:
                 print(f"    Reintento ({attempt+1}/{max_retries}): {e}")
             else:
@@ -1021,9 +1067,19 @@ def process_file(path, api, model, cfg, batch_size, dry_run,
         for batch_start in range(0, len(items), r_batch):
             batch = items[batch_start:batch_start + r_batch]
 
-            results = translate_batch(batch, api, r_model, r_cfg,
-                                      ref_langs=ref_langs, glossary=glossary,
-                                      num_gpu=num_gpu, num_ctx=r_ctx)
+            try:
+                results = translate_batch(batch, api, r_model, r_cfg,
+                                          ref_langs=ref_langs, glossary=glossary,
+                                          num_gpu=num_gpu, num_ctx=r_ctx)
+            except FatalBackendError as exc:
+                # Guardar lo traducido hasta aquí antes de salir: la corrida se
+                # reanuda sola en la siguiente ejecución.
+                print()
+                print(f"  ERROR IRRECUPERABLE con {r_model}: {exc}")
+                if translated_count:
+                    write_translated(path, entries, output_path)
+                    print(f"  Guardadas {translated_count} traducciones antes de abortar.")
+                raise
 
             for entry, result in zip(batch, results):
                 if result is None:
@@ -1077,7 +1133,10 @@ def main():
     parser.add_argument("--dry-run", action="store_true",
                         help="Muestra los primeros 5 strings sin traducir")
     parser.add_argument("--num-gpu", type=int, default=99)
-    parser.add_argument("--num-ctx", type=int, default=2048)
+    # 8192 y no 2048: medido, el default antiguo cortaba la generación y hacía
+    # fallar el 100% de los lotes de 30 (docs/benchmarks.md, resultado 1). Subirlo
+    # no cuesta VRAM porque Ollama asigna el KV cache según uso, no por adelantado.
+    parser.add_argument("--num-ctx", type=int, default=8192)
     parser.add_argument("--refs", default="auto",
                         help="Idiomas de referencia: 'auto' (default, autodetecta "
                              "campos original_XX), 'none', o lista 'ja,fr'")
@@ -1147,12 +1206,18 @@ def main():
             print(f"Archivo no encontrado: {path}")
             continue
         out_path = resolve_output_path(path, args.output, args.prefix)
-        ok, fail, pending = process_file(
-            path, args.api, model, cfg,
-            batch_size, args.dry_run, args.num_gpu, args.num_ctx, out_path,
-            refs_mode=args.refs, glossary=glossary, routes=routes,
-            classifier=classifier,
-        )
+        try:
+            ok, fail, pending = process_file(
+                path, args.api, model, cfg,
+                batch_size, args.dry_run, args.num_gpu, args.num_ctx, out_path,
+                refs_mode=args.refs, glossary=glossary, routes=routes,
+                classifier=classifier,
+            )
+        except FatalBackendError:
+            print("\n  Corrida abortada: el error no se arregla reintentando.")
+            print("  Revisa el modelo o baja --num-gpu, y vuelve a lanzar el mismo")
+            print("  comando: lo ya traducido se conserva y no se repite.")
+            sys.exit(2)
         total_ok += ok
         total_fail += fail
         total_pending += pending

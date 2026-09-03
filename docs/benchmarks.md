@@ -396,3 +396,69 @@ descripción del juego y sin el campo `context`. Es igual de buena y un 30% más
 
 `scripts/bench_classifier.py --use-context` conserva la opción para reproducir la medición
 o repetirla en un proyecto con nombres de evento descriptivos.
+
+## Resultado 8 — El tope de `--num-ctx` no lo pone la VRAM
+
+Los tres modelos declaran **131072** (128K) de contexto. La pregunta era hasta dónde
+aguanta eso en una GPU de 4 GB. Medido con `scripts/probe_ctx.py` sobre
+`gemma4:e2b-Uncensored`:
+
+| `num_ctx` | Carga | En GPU | s/lote |
+|---|---|---|---|
+| 2048 | sí | 100% | 13.7 |
+| 8192 | sí | 100% | 11.5 |
+| 32768 | sí | 100% | 10.7 |
+| 65536 | sí | 100% | 12.5 |
+| **131072** | **sí** | **100%** | 11.8 |
+
+**Llega al máximo del modelo sin salir de la GPU.** Y no es que los lotes de prueba
+fueran pequeños: repitiendo con prompts crecientes hasta **12.028 tokens** reales,
+sigue al 100% en GPU.
+
+La razón es que Ollama asigna el KV cache **según uso**, no reserva la ventana por
+adelantado. Subir `num_ctx` no cuesta VRAM mientras el texto no la llene.
+
+### Consecuencia: el default pasa de 2048 a 8192
+
+El 2048 original no protegía de nada — solo cortaba la generación y hacía fallar el
+100% de los lotes de 30 (resultado 1). Es un valor sin ventaja.
+
+Se deja en 8192 y no en 131072 porque **lo que limita no es la ventana sino el lote**:
+el tiempo crece linealmente con las entradas (20 → 20 s, 100 → 71 s, 300 → 219 s) y los
+modelos pequeños pierden la numeración mucho antes de llenar 128K. Una ventana enorme no
+compra nada si el lote útil son 30 líneas.
+
+**Regla práctica:** ajusta `--batch`, no `--num-ctx`. Con 8192 la ventana ya no es el
+cuello de botella en ningún caso medido.
+
+## Resultado 9 — Detectar que un modelo traduce el prompt
+
+El ISSUE-012 (TranslateGemma traduciendo las instrucciones) no lo veía ningún benchmark.
+La métrica `sin trad` **ya existía**, pero no se disparaba: el corpus incrustado es
+inglés con un prompt sin reglas, y ahí el modelo se comporta bien.
+
+Reproducido con las condiciones reales —corpus japonés, prompt con reglas y `--refs`— la
+respuesta cruda empieza así:
+
+```
+Utilice el español latinoamericano ('tú' y 'ustedes'), nunca 'vosotros'.
+Mantenga cada marcador de corchetes exactamente como está escrito…
+```
+
+Son las reglas del prompt traducidas al destino.
+
+Lo interesante: **el parser descarta ese preámbulo y las líneas salen bien**. Por eso la
+señal hay que buscarla en la respuesta CRUDA, no en las líneas parseadas.
+
+La métrica `eco` cuenta frases de instrucción en el crudo. Discrimina limpiamente:
+
+| Modelo | eco |
+|---|---|
+| `translategemma:4b` | **9** |
+| `gemma4:e2b-Uncensored` | **0** |
+
+Un valor >0 significa que el modelo no distingue instrucción de contenido: aunque ese
+lote salga bien, fallará en otros.
+
+`bench_batch.py` acepta ahora `--corpus` (un TOML de extracción real) y `--refs`, para
+medir con las condiciones exactas del proyecto en vez de con un corpus sintético.

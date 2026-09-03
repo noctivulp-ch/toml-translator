@@ -81,7 +81,7 @@ python toml-translator.py \
 | `--batch` | 10/50 | Strings por llamada (10 Ollama, 50 cloud) |
 | `--dry-run` | false | Muestra los primeros 5 sin traducir |
 | `--num-gpu` | 99 | Capas del modelo en GPU (Ollama) |
-| `--num-ctx` | 2048 | Ventana de contexto (reduce KV cache en VRAM) |
+| `--num-ctx` | 8192 | Ventana de contexto Ollama |
 | `--refs` | `auto` | Idiomas de referencia: `auto` / `none` / `ja,fr` |
 | `--glossary` | ninguno | TOML de glosario de términos; repetible |
 | `--routing` | ninguno | TOML de enrutado por contenido |
@@ -444,8 +444,8 @@ razón que parece. Medido en [`docs/benchmarks.md`](docs/benchmarks.md):
 
 | `num_ctx` | `gemma4:e2b` aguanta hasta |
 |---|---|
-| 2048 (default) | lote de **20** — a partir de 30 falla el 100% de los lotes |
-| 8192 | lote de **50** sin un solo fallo |
+| 2048 (antiguo default) | lote de **20** — a partir de 30 falla el 100% de los lotes |
+| 8192 (default actual) | lote de **50** sin un solo fallo |
 
 El fallo no viene de que el prompt no quepa: en el lote de 30 el prompt son 1013 tokens de
 
