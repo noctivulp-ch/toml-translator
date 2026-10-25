@@ -1,0 +1,30 @@
+# Textos inventados para las capturas del README: no salen de ningún juego.
+[[entry]]
+id = "INTRO_1"
+original = "Welcome to Fernvale, [PLAYER]! The harvest festival starts at dawn."
+translated = ""
+
+[[entry]]
+id = "INTRO_2"
+original = "Old Maren says the lighthouse has been dark for three nights.\nNobody dares to climb it."
+translated = ""
+
+[[entry]]
+id = "SHOP_1"
+original = "That will be \\C[3]120 gold\\C[0]. Do you want to buy it?"
+translated = ""
+
+[[entry]]
+id = "ITEM_LANTERN"
+original = "Brass Lantern"
+translated = ""
+
+[[entry]]
+id = "ITEM_LANTERN_DESC"
+original = "Burns for a whole night. Keeps the marsh spirits away."
+translated = ""
+
+[[entry]]
+id = "QUEST_DONE"
+original = "You lit the lighthouse! The fishing boats can find their way home again."
+translated = ""

@@ -19,6 +19,16 @@ depender del motor. Unos extractores sacan el texto del juego a TOML, el traduct
 lotes con un modelo de lenguaje y los inyectores lo devuelven al juego, como idioma nuevo y sin
 pisar el original.
 
+<p align="center">
+  <img src="docs/capturas/original-traducido.png" width="100%" alt="Archivo de ejemplo: arriba el original sin traducir, abajo ya traducido">
+</p>
+<p align="center">
+  <img src="docs/capturas/corrida.png" width="49%" alt="Salida de una corrida con Ollama y glosario">
+  <img src="docs/capturas/traducido.png" width="49%" alt="El archivo traducido">
+</p>
+
+<p align="center"><sub>Textos inventados, traducidos con <code>gemma4:e4b</code> en Ollama y un glosario de tres términos. Se regeneran con <code>tools/capturas/capturas.py</code>.</sub></p>
+
 ## Funciones principales
 
 - Backends: **Ollama** (local), OpenAI, Claude y DeepL.
