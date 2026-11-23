@@ -519,7 +519,7 @@ sacar lo que el modelo estropearía, traducir limpio, reinyectar después.
 ### Intento de arreglarlo con el prompt
 
 Se reforzó el prompt (prohibición explícita del neutro, equivalencias de tacos, lista
-de nombres propios) y se añadió `glossaries/terra-en-es.toml` con jerga y nombres:
+de nombres propios) y se añadió `traducciones/pokemon-reborn/glossary.toml` con jerga y nombres:
 
 | Métrica | v1 | v2 |
 |---|---|---|

@@ -17,5 +17,5 @@
 [[route]]
 name   = "todo"
 model  = "Librellama/gemma4:e2b-Uncensored"
-prompt = "../prompts/japones-es.toml"
+prompt = "../../prompts/japones-es.toml"
 batch  = 12

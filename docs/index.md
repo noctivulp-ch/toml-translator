@@ -16,6 +16,7 @@ Agnóstico al motor de juego: el TOML es el contrato entre extractores e IA.
 | Traducir un juego Pixel Game Maker MV | [`../extractors/pixel-game-maker-mv/README.md`](../extractors/pixel-game-maker-mv/README.md) |
 | Saber por qué algo es así | [`decisiones/`](decisiones/) |
 | Elegir modelo local y tamaño de lote | [`benchmarks.md`](benchmarks.md) |
+| Ver qué juegos están traducidos | [`../traducciones/`](../traducciones/) |
 | Ver qué está roto | [`../issues.md`](../issues.md) |
 
 ## Mapa del repositorio
@@ -31,6 +32,8 @@ toml-translator/
 │   └── pokemon-es.toml         ← términos canónicos (filtrado por lote)
 ├── routing/
 │   └── pokemon-es.toml         ← qué modelo traduce qué tipo de línea
+├── traducciones/
+│   └── <juego>/                ← README + glosario/enrutado propios del juego
 ├── scripts/
 │   ├── bench_batch.py          ← aguante por tamaño de lote
 │   ├── bench_content.py        ← tolerancia a contenido adulto
